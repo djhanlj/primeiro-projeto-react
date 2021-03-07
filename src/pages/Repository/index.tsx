@@ -1,8 +1,10 @@
-import React from 'react';
+/* eslint-disable no-redeclare */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import React, { useState, useEffect } from 'react';
 import { useRouteMatch, Link } from 'react-router-dom';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 
-// import api from '../../services/api';
+import api from '../../services/api';
 import { Header, RepositoryInfo, Issue } from './styled';
 import logoImg from '../../assets/logo.svg';
 
@@ -10,9 +12,54 @@ interface RepositoryParams {
   repository: string;
 }
 
+interface Repository {
+  full_name: string;
+  description: string;
+  stargazers_count: number;
+  forks_count: number;
+  open_issues_count: number;
+  owner: {
+    login: string;
+    avatar_url: string;
+  };
+}
+
+interface Issue {
+  id: string;
+  title: string;
+  html_url: string;
+  user: {
+    login: string;
+  };
+}
+
 const Repository: React.FC = () => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { params } = useRouteMatch<RepositoryParams>();
+  const [repository, setRepository] = useState<Repository | null>(null);
+  const [issues, setIssues] = useState<Issue[]>([]);
+
+  useEffect(() => {
+    api.get(`repos/${params.repository}`).then(response => {
+      setRepository(response.data);
+    });
+
+    api.get(`repos/${params.repository}/issues`).then(response => {
+      setIssues(response.data);
+    });
+
+    /* async function loadData(): Promise<void> {
+      const [repo, issuesApi] = await Promise.all([
+        api.get<Repository>(`repos/${params.repository}`),
+        api.get<Issue[]>(`repos/${params.repository}/issues`),
+      ]);
+
+      setRepository(repo);
+      setIssues(issuesApi);
+      console.log(repo);
+      console.log(issuesApi);
+    }
+    loadData() */
+  }, [params.repository]);
 
   return (
     <>
@@ -23,40 +70,44 @@ const Repository: React.FC = () => {
           Voltar
         </Link>
       </Header>
-      <RepositoryInfo>
-        <header>
-          <img
-            src="https://xesque.rocketseat.dev/users/avatar/profile-d3cc11ac-faee-4da8-a7b9-924aec6801a2-1614858393544.jpg"
-            alt="Github explorer"
-          />
-          <div>
-            <strong>nome/repositorio</strong>
-            <p> teste teste teste teste teste</p>
-          </div>
-        </header>
-        <ul>
-          <li>
-            <strong>1808</strong>
-            <span>Stars</span>
-          </li>
-          <li>
-            <strong>1808</strong>
-            <span>Forks</span>
-          </li>
-          <li>
-            <strong>1808</strong>
-            <span>Issues abertas</span>
-          </li>
-        </ul>
-      </RepositoryInfo>
+      {repository && (
+        <RepositoryInfo>
+          <header>
+            <img
+              src={repository.owner.avatar_url}
+              alt={repository.owner.login}
+            />
+            <div>
+              <strong>{repository.full_name}</strong>
+              <p>{repository.description}</p>
+            </div>
+          </header>
+          <ul>
+            <li>
+              <strong>{repository.stargazers_count}</strong>
+              <span>Stars</span>
+            </li>
+            <li>
+              <strong>{repository.forks_count} </strong>
+              <span>Forks</span>
+            </li>
+            <li>
+              <strong>{repository.open_issues_count}</strong>
+              <span>Issues abertas</span>
+            </li>
+          </ul>
+        </RepositoryInfo>
+      )}
       <Issue>
-        <Link to="/repository/">
-          <div>
-            <strong>aaaaa</strong>
-            <p>teste teste</p>
-          </div>
-          <FiChevronRight size={20} />
-        </Link>
+        {issues.map(issue => (
+          <a key={issue.id} href={issue.html_url}>
+            <div>
+              <strong>{issue.title}</strong>
+              <p>{issue.user.login}</p>
+            </div>
+            <FiChevronRight size={20} />
+          </a>
+        ))}
       </Issue>
     </>
   );
